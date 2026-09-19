@@ -35,7 +35,9 @@ if supp_path:
     season_scored = season_scored.merge(supp, on=["game_id", "play_id"], how="left")
 
 lb = leaderboard(season_scored, min_plays=30)
-lb_by_avg = lb.sort_values("avg_shadow", ascending=False).reset_index(drop=True)
+lb_by_avg = (leaderboard(season_scored, min_plays=100)
+             .sort_values("avg_shadow", ascending=False)
+             .reset_index(drop=True))
 
 Path("outputs").mkdir(exist_ok=True)
 season_scored.to_csv(f"outputs/shadow_plays_{season}_season.csv", index=False)
@@ -46,7 +48,7 @@ total = season_scored.groupby(["game_id","play_id"]).ngroups
 print(f"\n{season} season: {len(files)} weeks, {total} plays, {len(season_scored)} defender-play rows")
 print(f"\nTop 20 by total Shadow (min 30 coverage snaps):")
 print(lb.head(20).round(2).to_string(index=False))
-print(f"\nTop 20 by avg Shadow (min 30 coverage snaps):")
+print(f"\nTop 20 by avg Shadow (min 100 coverage snaps):")
 print(lb_by_avg.head(20).round(2).to_string(index=False))
 
 if supp_path:

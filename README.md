@@ -18,21 +18,22 @@ Aggregate over a season and you get a leaderboard of who actually contests throw
 
 ## 2023 season (v1)
 
-Minimum 30 coverage snaps, across all 18 weeks (14,107 plays). Total Shadow is a
-volume stat that rewards heavily targeted corners; average Shadow is a per-play rate.
+18 weeks, 14,107 plays. Total Shadow is a volume stat that rewards heavily targeted
+corners; average Shadow is a per-play rate. Total board uses a 30-snap minimum;
+avg board uses 100 to filter small-sample noise.
 
-| # | By total Shadow | Total (s) | Plays | | By avg Shadow | Avg (s) | Plays |
+| # | By total Shadow | Total (s) | Plays | | By avg Shadow (≥100 snaps) | Avg (s) | Plays |
 |---|---|---|---|---|---|---|---|
-| 1 | Deonte Banks | 87.94 | 333 | | Kaiir Elam | 0.35 | 52 |
-| 2 | Benjamin St-Juste | 86.92 | 419 | | Dee Winters | 0.29 | 30 |
-| 3 | Ahkello Witherspoon | 86.15 | 443 | | Deonte Banks | 0.26 | 333 |
-| 4 | Tyrique Stevenson | 82.28 | 393 | | Jaycee Horn | 0.26 | 97 |
-| 5 | Brandon Stephens | 78.14 | 444 | | Josh Jobe | 0.25 | 117 |
-| 6 | Zyon McCollum | 75.57 | 337 | | Dorian Williams | 0.24 | 64 |
-| 7 | Charvarius Ward | 74.28 | 415 | | Christian Gonzalez | 0.24 | 84 |
-| 8 | D.J. Reed | 72.71 | 329 | | Mike Ford | 0.24 | 68 |
-| 9 | Michael Davis | 71.48 | 380 | | Emmanuel Forbes | 0.23 | 203 |
-| 10 | James Bradberry | 68.36 | 464 | | Devin Bush | 0.23 | 59 |
+| 1 | Deonte Banks | 87.94 | 333 | | Deonte Banks | 0.26 | 333 |
+| 2 | Benjamin St-Juste | 86.92 | 419 | | Josh Jobe | 0.25 | 117 |
+| 3 | Ahkello Witherspoon | 86.15 | 443 | | Emmanuel Forbes | 0.23 | 203 |
+| 4 | Tyrique Stevenson | 82.28 | 393 | | J.C. Jackson | 0.23 | 221 |
+| 5 | Brandon Stephens | 78.14 | 444 | | Tre Avery | 0.23 | 135 |
+| 6 | Zyon McCollum | 75.57 | 337 | | Ronald Darby | 0.23 | 189 |
+| 7 | Charvarius Ward | 74.28 | 415 | | Darrell Baker Jr. | 0.23 | 186 |
+| 8 | D.J. Reed | 72.71 | 329 | | Zyon McCollum | 0.22 | 337 |
+| 9 | Michael Davis | 71.48 | 380 | | Montaric Brown | 0.22 | 208 |
+| 10 | James Bradberry | 68.36 | 464 | | Shaun Wade | 0.22 | 142 |
 
 ## Validation
 
@@ -54,6 +55,15 @@ v1 is a real signal, not noise.
     python run.py data/raw/input_2023_w01.csv
 
 Outputs land in `outputs/` as play-level scores and a leaderboard.
+
+## Limitations
+
+v1 Shadow measures **contest opportunity, not contest quality.** An isolated corner
+with no safety help earns a large Shadow whether or not he actually wins the rep —
+the metric rewards the geometry of being the nearest defender, not the result of the
+throw. It also can't distinguish a tight-window completion from a tight-window PBU:
+both look the same at the release frame. v2 will split Shadow by outcome (completed,
+incomplete, PBU, INT) so quality separates from opportunity.
 
 ## Roadmap
 
