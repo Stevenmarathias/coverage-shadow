@@ -35,25 +35,31 @@ if supp_path:
     season_scored = season_scored.merge(supp, on=["game_id", "play_id"], how="left")
 
 lb = leaderboard(season_scored, min_plays=30)
+lb_by_avg = lb.sort_values("avg_shadow", ascending=False).reset_index(drop=True)
 
 Path("outputs").mkdir(exist_ok=True)
 season_scored.to_csv(f"outputs/shadow_plays_{season}_season.csv", index=False)
 lb.to_csv(f"outputs/shadow_leaderboard_{season}_season.csv", index=False)
+lb_by_avg.to_csv(f"outputs/shadow_leaderboard_{season}_season_by_avg.csv", index=False)
 
 total = season_scored.groupby(["game_id","play_id"]).ngroups
 print(f"\n{season} season: {len(files)} weeks, {total} plays, {len(season_scored)} defender-play rows")
 print(f"\nTop 20 by total Shadow (min 30 coverage snaps):")
 print(lb.head(20).round(2).to_string(index=False))
+print(f"\nTop 20 by avg Shadow (min 30 coverage snaps):")
+print(lb_by_avg.head(20).round(2).to_string(index=False))
 
 if supp_path:
-    closest = (season_scored[season_scored["closest"]]
-               .dropna(subset=["pass_result"]).copy())
+    # pass_result codes: C = complete, I = incomplete, IN = intercepted.
+    # Restrict validation to completions and incompletions only.
+    closest = season_scored[season_scored["closest"]].copy()
+    closest = closest[closest["pass_result"].isin(["C", "I"])]
     closest["completed"] = (closest["pass_result"] == "C").astype(int)
     q1, q3 = closest["shadow"].quantile([0.25, 0.75])
     top = closest[closest["shadow"] >= q3]
     bot = closest[closest["shadow"] <= q1]
     corr = closest[["catch_window", "completed"]].corr().iloc[0, 1]
-    print(f"\nValidation ({len(closest)} plays with pass_result):")
+    print(f"\nValidation ({len(closest)} completions/incompletions):")
     print(f"  Top-quartile Shadow    (>= {q3:.2f}s, n={len(top)}): "
           f"{top['completed'].mean():.1%} complete")
     print(f"  Bottom-quartile Shadow (<= {q1:.2f}s, n={len(bot)}): "

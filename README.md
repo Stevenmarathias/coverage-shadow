@@ -18,31 +18,33 @@ Aggregate over a season and you get a leaderboard of who actually contests throw
 
 ## 2023 season (v1)
 
-Top 10 by total Shadow, minimum 30 coverage snaps, across all 18 weeks (14,107 plays).
+Minimum 30 coverage snaps, across all 18 weeks (14,107 plays). Total Shadow is a
+volume stat that rewards heavily targeted corners; average Shadow is a per-play rate.
 
-| Player | Pos | Plays | Total Shadow (s) | Avg |
-|---|---|---|---|---|
-| Deonte Banks | CB | 333 | 87.94 | 0.26 |
-| Benjamin St-Juste | CB | 419 | 86.92 | 0.21 |
-| Ahkello Witherspoon | CB | 443 | 86.15 | 0.19 |
-| Tyrique Stevenson | CB | 393 | 82.28 | 0.21 |
-| Brandon Stephens | CB | 444 | 78.14 | 0.18 |
-| Zyon McCollum | CB | 337 | 75.57 | 0.22 |
-| Charvarius Ward | CB | 415 | 74.28 | 0.18 |
-| D.J. Reed | CB | 329 | 72.71 | 0.22 |
-| Michael Davis | CB | 380 | 71.48 | 0.19 |
-| James Bradberry | CB | 464 | 68.36 | 0.15 |
+| # | By total Shadow | Total (s) | Plays | | By avg Shadow | Avg (s) | Plays |
+|---|---|---|---|---|---|---|---|
+| 1 | Deonte Banks | 87.94 | 333 | | Kaiir Elam | 0.35 | 52 |
+| 2 | Benjamin St-Juste | 86.92 | 419 | | Dee Winters | 0.29 | 30 |
+| 3 | Ahkello Witherspoon | 86.15 | 443 | | Deonte Banks | 0.26 | 333 |
+| 4 | Tyrique Stevenson | 82.28 | 393 | | Jaycee Horn | 0.26 | 97 |
+| 5 | Brandon Stephens | 78.14 | 444 | | Josh Jobe | 0.25 | 117 |
+| 6 | Zyon McCollum | 75.57 | 337 | | Dorian Williams | 0.24 | 64 |
+| 7 | Charvarius Ward | 74.28 | 415 | | Christian Gonzalez | 0.24 | 84 |
+| 8 | D.J. Reed | 72.71 | 329 | | Mike Ford | 0.24 | 68 |
+| 9 | Michael Davis | 71.48 | 380 | | Emmanuel Forbes | 0.23 | 203 |
+| 10 | James Bradberry | 68.36 | 464 | | Devin Bush | 0.23 | 59 |
 
 ## Validation
 
 Does Shadow actually track pass outcomes? Joining `pass_result` from the Big Data Bowl
-supplementary file onto every play (14,107 plays with an outcome):
+supplementary file, restricted to completions and incompletions (13,770 plays;
+interceptions excluded as a distinct outcome):
 
-- **Top-quartile closest-defender Shadow (≥ 1.03s):** 60.8% completion (n = 3,527)
-- **Bottom-quartile closest-defender Shadow (≤ 0.26s):** 73.5% completion (n = 3,527)
-- **corr(catch_window, completed) = +0.349**
+- **Top-quartile closest-defender Shadow (≥ 1.03s):** 62.5% completion (n = 3,443)
+- **Bottom-quartile closest-defender Shadow (≤ 0.26s):** 75.0% completion (n = 3,443)
+- **corr(catch_window, completed) = +0.332**
 
-Passes where the nearest defender erases the most window complete ~13 points less often,
+Passes where the nearest defender erases the most window complete ~12.5 points less often,
 and catch window itself is moderately correlated with completion in the expected direction.
 v1 is a real signal, not noise.
 
