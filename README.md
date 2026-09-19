@@ -16,6 +16,19 @@ they were removed from the field — the space they personally took away.
 
 Aggregate over a season and you get a leaderboard of who actually contests throws.
 
+![Stephon Gilmore forces incomplete on a 0.10s catch window](figures/example_play_2023.png)
+
+*The play in 2023 where Gilmore contributed the most to his `shadow_won` total: he
+arrives 0.86s after release to a target arriving in 0.76s, erasing 2.76s of catch
+window from a throw the completion model expected to land 58% of the time.*
+
+![Shadow Over Expected, 2023 season](figures/soe_scatter_2023.png)
+
+*Every defender with 100+ coverage snaps in 2023, plotted by contests (times they
+were the closest defender on a resolved pass) versus Shadow Over Expected. Points
+above the dashed line beat the completion model's expectation; below it, they gave
+up more than expected.*
+
 ## 2023 season (v1)
 
 18 weeks, 14,107 plays. Total Shadow is a volume stat that rewards heavily targeted
