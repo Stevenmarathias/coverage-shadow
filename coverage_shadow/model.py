@@ -120,8 +120,14 @@ def add_v2_metrics(scored: pd.DataFrame, coef=None) -> pd.DataFrame:
     """
     Enrich the v1 per-defender-per-play frame with:
       - completed:             1 for C, 0 for I, NaN otherwise
-      - expected_completion:   sigmoid(a + b * catch_window)
-      - shadow_over_expected:  expected - completed, on closest+resolved rows
+      - expected_completion:   sigmoid(a + b * catch_window), in [0, 1]
+      - shadow_over_expected:  expected - completed on closest+resolved rows,
+                               i.e. completions prevented above expectation
+                               on that play. Unitless; summed over a season
+                               it reads as total completions prevented.
+
+    The completion model uses catch_window as its only feature; adding throw
+    depth is future work.
     """
     out = scored.copy()
     out["completed"] = out["pass_result"].map({"C": 1.0, "I": 0.0})
@@ -139,6 +145,9 @@ def leaderboard_v2(scored_v2: pd.DataFrame, min_plays: int = 100) -> pd.DataFram
     Per-defender v2 board. `plays` is coverage snaps (same units as v1's
     min_plays filter); won/lost/SOE aggregate only over plays where the
     defender was closest with a resolved outcome.
+
+    Units: `shadow_won` and `shadow_lost` are in seconds (sums of Shadow).
+    `shadow_over_expected` is in completions prevented above expectation.
     """
     base = (scored_v2.groupby(["nfl_id", "player_name", "position"])
             .agg(plays=("shadow", "size"),

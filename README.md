@@ -55,13 +55,16 @@ v2 grades contests instead of just counting them. Every play with a resolved out
 gets an **expected completion** from a logistic regression of completion on catch
 window (fit across all 13,770 completions/incompletions in 2023:
 `P(C) = sigmoid(+0.158 + 1.755 · catch_window)`). A defender's **Shadow Over Expected**
-(SOE) on a play is the model's expected completion minus what actually happened — so
-forcing an incompletion on a wide-open target earns big positive credit, while getting
-beaten on a tight window barely dents the score. Summed over the season (closest
-defender per play, min 100 coverage snaps) it rewards defenders who beat the geometry
-their own Shadow assigned them.
+(SOE) on a play is expected completion minus actual completion, so it is measured in
+**completions prevented above expectation**: forcing an incompletion when the model
+expected 0.9 earns +0.9 comps; giving up a completion when the model expected 0.3
+costs 0.7. Summed over the season (closest defender per play, min 100 coverage snaps),
+Gilmore's +10.03 means he prevented roughly 10 completions beyond what catch window
+alone predicted. The completion model uses catch window as its only feature — adding
+throw depth (short passes complete far more often than deep ones at the same window)
+is future work.
 
-| # | Player | Pos | Plays | Contests | Won (s) | Lost (s) | Win rate | SOE |
+| # | Player | Pos | Plays | Contests | Won (s) | Lost (s) | Win rate | SOE (comps) |
 |---|---|---|---|---|---|---|---|---|
 | 1 | Stephon Gilmore | CB | 372 | 72 | 24.47 | 34.24 | 41.7% | +10.03 |
 | 2 | Kendall Fuller | CB | 402 | 54 | 22.06 | 19.87 | 52.6% | +9.53 |
@@ -74,10 +77,10 @@ their own Shadow assigned them.
 | 9 | Ja'Sir Taylor | CB | 250 | 41 | 19.51 | 15.19 | 56.2% | +7.23 |
 | 10 | Darious Williams | CB | 465 | 77 | 26.33 | 33.23 | 44.2% | +7.21 |
 
-`shadow_won` and `shadow_lost` sum a defender's Shadow across the incompletions and
-completions they contested; `win_rate = won / (won + lost)`. Note how SOE reshuffles
-the board: Deonte Banks, the v1 volume leader, drops to 19th — he contests a lot but
-converts about as often as the geometry would predict.
+`shadow_won` and `shadow_lost` sum a defender's Shadow (in seconds) across the
+incompletions and completions they contested; `win_rate = won / (won + lost)`. Note
+how SOE reshuffles the board: Deonte Banks, the v1 volume leader, drops to 19th — he
+contests a lot but converts about as often as the geometry would predict.
 
 ## Run it
 
