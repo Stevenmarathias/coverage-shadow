@@ -33,6 +33,19 @@ Top 10 by total Shadow, minimum 30 coverage snaps, across all 18 weeks (14,107 p
 | Michael Davis | CB | 380 | 71.48 | 0.19 |
 | James Bradberry | CB | 464 | 68.36 | 0.15 |
 
+## Validation
+
+Does Shadow actually track pass outcomes? Joining `pass_result` from the Big Data Bowl
+supplementary file onto every play (14,107 plays with an outcome):
+
+- **Top-quartile closest-defender Shadow (≥ 1.03s):** 60.8% completion (n = 3,527)
+- **Bottom-quartile closest-defender Shadow (≤ 0.26s):** 73.5% completion (n = 3,527)
+- **corr(catch_window, completed) = +0.349**
+
+Passes where the nearest defender erases the most window complete ~13 points less often,
+and catch window itself is moderately correlated with completion in the expected direction.
+v1 is a real signal, not noise.
+
 ## Run it
 
     pip install -r requirements.txt
