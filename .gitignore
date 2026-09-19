@@ -1,0 +1,7 @@
+# Raw Big Data Bowl data is CC BY-NC 4.0 — never commit it
+data/raw/
+*.csv
+!outputs/*.csv
+__pycache__/
+.ipynb_checkpoints/
+.venv/
