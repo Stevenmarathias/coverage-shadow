@@ -82,3 +82,87 @@ def leaderboard(scored: pd.DataFrame, min_plays: int = 10) -> pd.DataFrame:
     return (lb[lb["plays"] >= min_plays]
             .sort_values("total_shadow", ascending=False)
             .reset_index(drop=True))
+
+
+# ---------------------------------------------------------------------------
+# v2: outcome-aware Shadow. Grades contests instead of just counting geometry.
+# Requires a "pass_result" column already merged onto the v1 output.
+# ---------------------------------------------------------------------------
+
+def fit_completion_model(scored: pd.DataFrame, max_iter: int = 50):
+    """
+    Fit P(complete) = sigmoid(a + b * catch_window) on the closest-defender
+    row per play, restricted to completions and incompletions. Returns (a, b).
+    Uses Newton-Raphson so we don't need sklearn/scipy.
+    """
+    plays = scored[scored["closest"] & scored["pass_result"].isin(["C", "I"])]
+    y = (plays["pass_result"] == "C").astype(float).to_numpy()
+    x = plays["catch_window"].to_numpy()
+    a, b = 0.0, 0.0
+    for _ in range(max_iter):
+        p = 1.0 / (1.0 + np.exp(-(a + b * x)))
+        g0, g1 = (p - y).sum(), ((p - y) * x).sum()
+        w = p * (1 - p)
+        h00, h01, h11 = w.sum(), (w * x).sum(), (w * x * x).sum()
+        det = h00 * h11 - h01 * h01
+        if abs(det) < 1e-12:
+            break
+        step_a = (h11 * g0 - h01 * g1) / det
+        step_b = (-h01 * g0 + h00 * g1) / det
+        a -= step_a
+        b -= step_b
+        if abs(step_a) + abs(step_b) < 1e-8:
+            break
+    return a, b
+
+
+def add_v2_metrics(scored: pd.DataFrame, coef=None) -> pd.DataFrame:
+    """
+    Enrich the v1 per-defender-per-play frame with:
+      - completed:             1 for C, 0 for I, NaN otherwise
+      - expected_completion:   sigmoid(a + b * catch_window)
+      - shadow_over_expected:  expected - completed, on closest+resolved rows
+    """
+    out = scored.copy()
+    out["completed"] = out["pass_result"].map({"C": 1.0, "I": 0.0})
+    a, b = coef if coef is not None else fit_completion_model(out)
+    out["expected_completion"] = 1.0 / (1.0 + np.exp(-(a + b * out["catch_window"])))
+    mask = out["closest"] & out["completed"].notna()
+    out["shadow_over_expected"] = np.where(
+        mask, out["expected_completion"] - out["completed"], np.nan
+    )
+    return out
+
+
+def leaderboard_v2(scored_v2: pd.DataFrame, min_plays: int = 100) -> pd.DataFrame:
+    """
+    Per-defender v2 board. `plays` is coverage snaps (same units as v1's
+    min_plays filter); won/lost/SOE aggregate only over plays where the
+    defender was closest with a resolved outcome.
+    """
+    base = (scored_v2.groupby(["nfl_id", "player_name", "position"])
+            .agg(plays=("shadow", "size"),
+                 total_shadow=("shadow", "sum"))
+            .reset_index())
+
+    contested = scored_v2[scored_v2["closest"] & scored_v2["completed"].notna()]
+    keys = ["nfl_id", "player_name", "position"]
+    agg = (contested.assign(
+                incomplete_shadow=lambda d: np.where(d["completed"] == 0, d["shadow"], 0.0),
+                complete_shadow=lambda d: np.where(d["completed"] == 1, d["shadow"], 0.0))
+           .groupby(keys)
+           .agg(contests=("shadow", "size"),
+                shadow_won=("incomplete_shadow", "sum"),
+                shadow_lost=("complete_shadow", "sum"),
+                shadow_over_expected=("shadow_over_expected", "sum"))
+           .reset_index())
+
+    lb = base.merge(agg, on=keys, how="left")
+    for col in ["contests", "shadow_won", "shadow_lost", "shadow_over_expected"]:
+        lb[col] = lb[col].fillna(0.0)
+    denom = lb["shadow_won"] + lb["shadow_lost"]
+    lb["win_rate"] = np.where(denom > 0, lb["shadow_won"] / denom, np.nan)
+
+    return (lb[lb["plays"] >= min_plays]
+            .sort_values("shadow_over_expected", ascending=False)
+            .reset_index(drop=True))

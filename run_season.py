@@ -6,7 +6,10 @@ Usage:
 import sys
 from pathlib import Path
 import pandas as pd
-from coverage_shadow import load_week, score_plays, leaderboard
+from coverage_shadow import (
+    load_week, score_plays, leaderboard,
+    fit_completion_model, add_v2_metrics, leaderboard_v2,
+)
 
 folder = Path(sys.argv[1]).expanduser()
 season = sys.argv[2] if len(sys.argv) > 2 else "2023"
@@ -39,10 +42,18 @@ lb_by_avg = (leaderboard(season_scored, min_plays=100)
              .sort_values("avg_shadow", ascending=False)
              .reset_index(drop=True))
 
+# v2: fit completion model and grade contests. Only runs if outcomes joined.
+if supp_path:
+    coef = fit_completion_model(season_scored)
+    season_scored = add_v2_metrics(season_scored, coef=coef)
+    lb_v2 = leaderboard_v2(season_scored, min_plays=100)
+
 Path("outputs").mkdir(exist_ok=True)
 season_scored.to_csv(f"outputs/shadow_plays_{season}_season.csv", index=False)
 lb.to_csv(f"outputs/shadow_leaderboard_{season}_season.csv", index=False)
 lb_by_avg.to_csv(f"outputs/shadow_leaderboard_{season}_season_by_avg.csv", index=False)
+if supp_path:
+    lb_v2.to_csv(f"outputs/shadow_leaderboard_{season}_season_v2.csv", index=False)
 
 total = season_scored.groupby(["game_id","play_id"]).ngroups
 print(f"\n{season} season: {len(files)} weeks, {total} plays, {len(season_scored)} defender-play rows")
@@ -67,3 +78,10 @@ if supp_path:
     print(f"  Bottom-quartile Shadow (<= {q1:.2f}s, n={len(bot)}): "
           f"{bot['completed'].mean():.1%} complete")
     print(f"  corr(catch_window, completed) = {corr:+.3f}")
+
+    a, b = coef
+    print(f"\nv2 completion model: P(C) = sigmoid({a:+.3f} {b:+.3f} * catch_window)")
+    print(f"\nTop 20 by Shadow Over Expected (min 100 coverage snaps):")
+    cols = ["player_name", "position", "plays", "contests",
+            "shadow_won", "shadow_lost", "win_rate", "shadow_over_expected"]
+    print(lb_v2.head(20)[cols].round(3).to_string(index=False))
