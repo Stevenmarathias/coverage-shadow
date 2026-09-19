@@ -16,15 +16,22 @@ they were removed from the field — the space they personally took away.
 
 Aggregate over a season and you get a leaderboard of who actually contests throws.
 
-## Week 1, 2023 (v1)
+## 2023 season (v1)
+
+Top 10 by total Shadow, minimum 30 coverage snaps, across all 18 weeks (14,107 plays).
 
 | Player | Pos | Plays | Total Shadow (s) | Avg |
 |---|---|---|---|---|
-| Denzel Ward | CB | 21 | 10.73 | 0.51 |
-| D.J. Reed | CB | 31 | 9.30 | 0.30 |
-| A.J. Terrell | CB | 27 | 8.87 | 0.33 |
-| Dre Greenlaw | ILB | 34 | 8.86 | 0.26 |
-| Christian Gonzalez | CB | 26 | 7.94 | 0.31 |
+| Deonte Banks | CB | 333 | 87.94 | 0.26 |
+| Benjamin St-Juste | CB | 419 | 86.92 | 0.21 |
+| Ahkello Witherspoon | CB | 443 | 86.15 | 0.19 |
+| Tyrique Stevenson | CB | 393 | 82.28 | 0.21 |
+| Brandon Stephens | CB | 444 | 78.14 | 0.18 |
+| Zyon McCollum | CB | 337 | 75.57 | 0.22 |
+| Charvarius Ward | CB | 415 | 74.28 | 0.18 |
+| D.J. Reed | CB | 329 | 72.71 | 0.22 |
+| Michael Davis | CB | 380 | 71.48 | 0.19 |
+| James Bradberry | CB | 464 | 68.36 | 0.15 |
 
 ## Run it
 
