@@ -116,6 +116,48 @@ def fit_completion_model(scored: pd.DataFrame, max_iter: int = 50):
     return a, b
 
 
+def fit_logit(X: np.ndarray, y: np.ndarray, max_iter: int = 50) -> np.ndarray:
+    """
+    Logistic regression P(y=1) = sigmoid(X @ beta) by Newton-Raphson, for any
+    number of features. X must already include an intercept column.
+    Used by the throw-depth comparison; v2's one-feature model above is kept
+    as-is so its published numbers don't move.
+    """
+    beta = np.zeros(X.shape[1])
+    for _ in range(max_iter):
+        p = predict_logit(X, beta)
+        with _quiet_matmul():
+            grad = X.T @ (p - y)
+            hess = (X * (p * (1 - p))[:, None]).T @ X
+        step = np.linalg.solve(hess, grad)
+        beta -= step
+        if np.abs(step).sum() < 1e-8:
+            break
+    if not np.all(np.isfinite(beta)):
+        raise FloatingPointError(f"logit fit diverged: {beta}")
+    return beta
+
+
+def _quiet_matmul():
+    # numpy 2.0 on macOS Accelerate raises spurious divide/overflow warnings
+    # from finite matmuls (numpy#26669); results are checked for finiteness.
+    return np.errstate(divide="ignore", over="ignore", invalid="ignore")
+
+
+def predict_logit(X: np.ndarray, beta: np.ndarray) -> np.ndarray:
+    with _quiet_matmul():
+        z = X @ beta
+    if not np.all(np.isfinite(z)):
+        raise FloatingPointError("non-finite logit")
+    return 1.0 / (1.0 + np.exp(-z))
+
+
+def log_loss(y: np.ndarray, p: np.ndarray) -> float:
+    """Mean negative log-likelihood (nats) of binary outcomes y under p."""
+    p = np.clip(p, 1e-12, 1 - 1e-12)
+    return float(-np.mean(y * np.log(p) + (1 - y) * np.log(1 - p)))
+
+
 def add_v2_metrics(scored: pd.DataFrame, coef=None) -> pd.DataFrame:
     """
     Enrich the v1 per-defender-per-play frame with:
