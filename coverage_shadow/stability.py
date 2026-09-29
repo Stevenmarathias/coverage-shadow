@@ -160,3 +160,40 @@ def pfr_year_over_year(a: pd.DataFrame, b: pd.DataFrame, metric: str, gate: int)
     res["same_team"] = correlate(m.loc[~moved, f"{metric}_1"], m.loc[~moved, f"{metric}_2"])
     res["changed_team"] = correlate(m.loc[moved, f"{metric}_1"], m.loc[moved, f"{metric}_2"])
     return res
+
+
+# ------------------------------------------------- predictive validity -----
+
+PLAYERS = NFLVERSE + "/players/players.parquet"
+
+
+def nfl_to_pfr(cache: Path) -> dict:
+    """Big Data Bowl nfl_id -> PFR id, from nflverse's players file."""
+    p = pd.read_parquet(_cached(PLAYERS, cache), columns=["nfl_id", "pfr_id"]).dropna()
+    p["nfl_id"] = pd.to_numeric(p["nfl_id"], errors="coerce")
+    p = p.dropna().drop_duplicates("nfl_id")
+    return dict(zip(p["nfl_id"].astype(int), p["pfr_id"]))
+
+
+def compare_dependent_r(r1: float, r2: float, r12: float, n: int):
+    """Meng, Rosenthal & Rubin (1992): are r1 = corr(y, x1) and r2 =
+    corr(y, x2) different, given r12 = corr(x1, x2)? Returns (z, two-sided p)."""
+    from math import erf, sqrt
+    z1, z2 = np.arctanh(r1), np.arctanh(r2)
+    rbar2 = (r1 ** 2 + r2 ** 2) / 2
+    f = min(1.0, (1 - r12) / (2 * (1 - rbar2)))
+    h = (1 - f * rbar2) / (1 - rbar2)
+    z = (z1 - z2) * sqrt((n - 3) / (2 * (1 - r12) * h))
+    p = 2 * (1 - 0.5 * (1 + erf(abs(z) / sqrt(2))))
+    return float(z), float(p)
+
+
+def bootstrap_r_diff(y, x1, x2, reps: int = 5000, seed: int = 0):
+    """95% interval of corr(y, x1) - corr(y, x2) over resampled players."""
+    rng = np.random.default_rng(seed)
+    y, x1, x2 = (np.asarray(v, float) for v in (y, x1, x2))
+    n, d = len(y), []
+    for _ in range(reps):
+        i = rng.integers(0, n, n)
+        d.append(pearson(y[i], x1[i]) - pearson(y[i], x2[i]))
+    return tuple(np.nanpercentile(d, [2.5, 97.5]))
