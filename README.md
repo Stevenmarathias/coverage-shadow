@@ -1,5 +1,7 @@
 # Coverage Shadow
 
+Plain-language write-up: [WRITEUP.md](WRITEUP.md)
+
 An NFL player-tracking metric that quantifies how much catch window each defender erases on a pass.
 
 Built on NFL Big Data Bowl 2026 tracking data: the full 2023 regular season. (The
