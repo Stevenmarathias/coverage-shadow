@@ -240,6 +240,54 @@ pair of seasons 2018–2025 (426 CB pairs), it's r = +0.19; passer rating allowe
 settle whether Shadow does better, a 2023 → 2024 correlation with team changers split
 out, needs 2024 tracking data, which the Big Data Bowl 2026 release doesn't include.
 
+### v3: involvement and effect (pre-registered; both failed)
+
+The involvement finding suggested splitting avg Shadow in two. The definitions and the
+pass/fail bar were fixed and committed (`8739a15`, `coverage_shadow/v3.py`,
+`run_v3.py`) before any v3 number was computed:
+
+- **Involvement:** share of a corner's coverage snaps on which he is the closest or
+  second-closest defender to the landing spot at release.
+- **Effect:** his average window reduction on those plays: how much sooner he gets
+  there than the next defender behind him. For the closest defender that's exactly his
+  v1 Shadow; for the second-closest, it's the window he'd erase if the closest weren't
+  there.
+- **Bar for effect:** split-half reliability (Spearman-Brown, full season) ≥ 0.40,
+  **and**, in both splits (weeks 1–9 → 10–18, odd → even), first-half effect is not
+  significantly worse than first-half completion % allowed at predicting second-half
+  completion % allowed (Meng-Rosenthal-Rubin two-sided p ≥ 0.05). Involvement faces the
+  same bar. CBs only, 50+ snaps and 15+ involved plays per half, 15+ PFR targets per half.
+
+| Component | Split-half r (n = 115) | Full-season reliability | → 2nd-half cmp %, weeks 1–9 → 10–18 (n = 90) | → 2nd-half cmp %, odd → even (n = 101) | Verdict |
+|---|---|---|---|---|---|
+| **Effect** | +0.12 [−0.06, +0.30] | **0.22** ✗ | +0.18 vs +0.27, p = 0.46 ✓ | +0.16 vs +0.36, p = 0.10 ✓ | **Fail**: not reliable |
+| **Involvement** | +0.31 [+0.13, +0.46] | 0.47 ✓ | −0.04 vs +0.27, p = 0.04 ✗ | −0.05 vs +0.36, p < 0.01 ✗ | **Fail**: doesn't predict |
+| (avg Shadow, for reference) | +0.45 | 0.62 | +0.15 vs +0.27, p = 0.34 | +0.09 vs +0.36, p = 0.04 | |
+
+In each prediction cell, the first number is the component's correlation with
+second-half completion % allowed (sign-flipped, so positive is the right direction) and
+the second is first-half completion % allowed's own. The verdict is the same whether
+"reliability" means the full-season value or the raw half-season r.
+
+The two halves of Shadow split cleanly into the two failure modes already seen:
+
+- **Effect** is where Shadow's small outcome signal lives. It is Shadow's best forecaster
+  of completion % (+0.18 and +0.16) and isn't significantly behind completion % allowed.
+  But it is barely repeatable: a corner's window reduction when involved in odd weeks says
+  little about his even weeks. Like SOE, it is graded on too few plays per half (median
+  46–48 involved plays) to separate skill from noise. Its "not worse" prediction result
+  comes with intervals that include zero, so it doesn't rescue it.
+- **Involvement** is where Shadow's stability lives, and it carries none of the outcome
+  signal: how often a corner is near the throw says nothing about how often those throws
+  are completed.
+
+**Involvement explains the target-rate finding.** First-half involvement predicts
+second-half targets per coverage snap (+0.25 [+0.06, +0.43] weeks 1–9 → 10–18;
++0.27 [+0.09, +0.43] odd → even). Effect doesn't (+0.00; −0.11). Holding involvement
+fixed, avg Shadow's link to target rate drops from +0.23 / +0.20 to +0.10 / +0.10. High-
+Shadow corners get thrown at more because they are the corners around the ball, not
+because of how well they contest it.
+
 What this means in practice:
 
 - **Avg Coverage Shadow** is a reliable description of how much a corner is around the
@@ -249,9 +297,14 @@ What this means in practice:
   allowed, and it forecasts completion % less well than completion % itself.
 - **SOE** describes what happened and shouldn't be used to rank defenders by skill
   from one season of data.
-- **Still unknown:** whether avg Shadow persists across seasons and team changes, and
-  whether a version that separates involvement (how often a corner is near the throw)
-  from effect (how much window he takes when he is) would forecast outcomes.
+- **v3 doesn't fix it.** Splitting Shadow into involvement and effect fails the
+  pre-registered bar on both sides. Involvement is stable but says nothing about outcomes;
+  effect has a hint of outcome signal but isn't reliable in one season.
+- **Still unknown:** whether effect becomes reliable with more data, which needs more
+  than one season of tracking. Pooling 2023 with a second season would roughly double
+  each corner's involved plays; by Spearman-Brown that would take effect's reliability
+  from 0.22 to about 0.36, still short of 0.40. Also whether avg Shadow persists across
+  seasons and team changes.
 
 ## Run it
 
@@ -261,6 +314,7 @@ What this means in practice:
     python run_expected_model.py <folder_with_input_csvs> 2023   # throw-depth test
     python run_stability.py <folder_with_input_csvs> 2023        # split-half + PFR benchmark
     python run_role_checks.py <folder_with_input_csvs> 2023      # role controls + predictive validity
+    python run_v3.py <folder_with_input_csvs> 2023               # involvement / effect vs the v3 bar
 
 Outputs land in `outputs/` as play-level scores and leaderboards; `run_stability.py`
 and `run_role_checks.py` download the public nflverse PFR, roster and player-ID files
@@ -279,7 +333,8 @@ available, so nothing here is tested across seasons yet.
 
 - **v1 (done):** closing-time model; only the closest-arriving defender earns credit
 - **v2 (done):** outcome-aware Shadow — win/loss splits and Shadow Over Expected
-- **v3:** soft credit so a second defender closing hard earns partial Shadow
+- **v3 (tested, failed its pre-registered bar):** involvement / effect split; the effect
+  side gives second-closest defenders partial credit, but it isn't reliable in one season
 - **v4:** ball-in-the-air extension — how the window collapses frame by frame
 - **Visuals:** field heatmaps of each defender's shadow
 
