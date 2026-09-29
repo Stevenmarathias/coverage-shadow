@@ -2,7 +2,9 @@
 
 An NFL player-tracking metric that quantifies how much catch window each defender erases on a pass.
 
-Built on NFL Big Data Bowl 2026 tracking data (2023–2024 seasons). Companion to
+Built on NFL Big Data Bowl 2026 tracking data: the full 2023 regular season. (The
+release lists 2024 weeks 14–18 in its supplementary file, but as play outcomes only,
+with no tracking, so nothing here is scored for 2024.) Companion to
 [Catch Radius Pressure](https://github.com/Stevenmarathias) — CRP measures the receiver's side of the
 catch point; Coverage Shadow measures the defense's.
 
@@ -73,9 +75,8 @@ window (fit across all 13,770 completions/incompletions in 2023:
 expected 0.9 earns +0.9 comps; giving up a completion when the model expected 0.3
 costs 0.7. Summed over the season (closest defender per play, min 100 coverage snaps),
 Gilmore's +10.03 means he prevented roughly 10 completions beyond what catch window
-alone predicted. The completion model uses catch window as its only feature — adding
-throw depth (short passes complete far more often than deep ones at the same window)
-is future work.
+alone predicted. The completion model uses catch window as its only feature; the
+throw-depth version below is the one to use going forward.
 
 | # | Player | Pos | Plays | Contests | Won (s) | Lost (s) | Win rate | SOE (comps) |
 |---|---|---|---|---|---|---|---|---|
@@ -95,19 +96,117 @@ incompletions and completions they contested; `win_rate = won / (won + lost)`. N
 how SOE reshuffles the board: Deonte Banks, the v1 volume leader, drops to 19th — he
 contests a lot but converts about as often as the geometry would predict.
 
+### Adding throw depth to the completion model
+
+Short passes complete far more often than deep ones at the same catch window, so the
+expected-completion model now also takes air yards (`pass_length` in the supplementary
+file). Held-out log loss, six folds of three weeks each (`run_expected_model.py`):
+
+| Model | Mean held-out log loss | Better than window-only |
+|---|---|---|
+| Base rate only | 0.6050 | |
+| Catch window (v2 as published) | 0.5354 | |
+| **Catch window + air yards** | **0.5217** | 6 of 6 folds, −0.0136 nats |
+| + air yards² | 0.5212 | vs linear depth: 3 of 6 folds, −0.0006 |
+
+The bar for adopting it was lower loss in every fold and at least 0.005 nats on
+average; depth clears it, and a curved depth term doesn't add anything. Full-season fit:
+`logit P(C) = 0.690 + 1.493 · catch_window − 0.411 · (air yards / 10)`.
+
+SOE with and without depth correlates r = 0.96 across the 313 qualified defenders, and 8
+of the top 10 stay put:
+
+| # | Window only (v2) | SOE | | Window + air yards | SOE |
+|---|---|---|---|---|---|
+| 1 | Stephon Gilmore | +10.03 | | Stephon Gilmore | +9.46 |
+| 2 | Kendall Fuller | +9.53 | | Greg Newsome II | +8.06 |
+| 3 | Levi Wallace | +8.81 | | Levi Wallace | +7.70 |
+| 4 | Paulson Adebo | +8.50 | | Devon Witherspoon | +7.69 |
+| 5 | Ahkello Witherspoon | +8.40 | | Kendall Fuller | +7.30 |
+| 6 | Greg Newsome II | +7.76 | | Kyle Hamilton | +7.05 |
+| 7 | Devon Witherspoon | +7.31 | | Paulson Adebo | +6.52 |
+| 8 | Zyon McCollum | +7.29 | | Ja'Sir Taylor | +6.51 |
+| 9 | Ja'Sir Taylor | +7.23 | | Amik Robertson | +6.12 |
+| 10 | Darious Williams | +7.21 | | Zyon McCollum | +6.09 |
+
+But read the next section before reading either SOE board as a ranking of skill.
+
+## Stability
+
+A skill metric has to agree with itself. The test (`run_stability.py`): score every
+cornerback on odd weeks and on even weeks of 2023 separately (nine weeks each), and
+correlate the two halves. Spearman-Brown turns that half-season correlation into an
+estimate of full-season reliability. PFR's charted coverage stats for the same CBs get
+exactly the same test, as a benchmark.
+
+![Split-half stability, 2023 cornerbacks](figures/stability_split_half_2023.png)
+
+| 2023 CBs, odd vs even weeks | Minimum per half | n | Half-season r | Full-season reliability |
+|---|---|---|---|---|
+| **Avg Coverage Shadow** (per snap) | 50 snaps | 120 | +0.43 | **0.60** |
+| **SOE per contest**, window + depth | 15 contests | 96 | +0.05 | **0.10** |
+| SOE per contest, window only (v2) | 15 contests | 96 | +0.04 | 0.09 |
+| PFR completion % allowed | 15 targets | 89 | +0.44 | 0.61 |
+| PFR passer rating allowed | 15 targets | 89 | +0.16 | 0.28 |
+
+(Across all positions, avg Shadow looks even steadier, r = +0.69, but that mostly reflects
+linebackers, safeties and corners doing different jobs. The CB-only number is the fair one.)
+
+**Coverage Shadow holds up.** A corner's average Shadow is about as repeatable within a
+season as his completion % allowed, and far more so than passer rating allowed. It gets
+steadier with volume: half-season r climbs from +0.40 at 25 snaps per half to +0.50 at
+100 and +0.62 at 150 (full-season reliability 0.57 → 0.67 → 0.76). It isn't a man/zone
+artifact either: a CB's avg Shadow is uncorrelated with how often his team plays man
+(r = +0.00), and removing that leaves the split-half correlation at +0.45.
+
+**SOE does not.** A corner's SOE in odd weeks tells you essentially nothing about his
+even weeks (r = +0.05 with throw depth, +0.04 without). Raising the
+minimum doesn't rescue it: r is −0.04 to +0.10 from 10 to 30 contests per half, with no
+upward trend. The reason is sample size against coin-flip noise. SOE is actual minus
+expected completions, and each contest's outcome is close to a coin flip once the
+geometry is known. Across CBs with 30+ contests, SOE per contest varies by a standard
+deviation of 0.060, while chance alone would produce 0.061. There is no measurable
+room left for skill. So SOE boards, including the ones above, mostly rank luck. Gilmore's
++10 completions prevented is a real description of his 2023, not a forecast. SOE should
+be read that way until multiple seasons can be pooled, or a player's contests are
+weighted by something more stable than the result.
+
+**Across seasons, even the benchmark is weak.** PFR's completion % allowed correlates
+only r = +0.18 from 2023 to 2024 for CBs with 30+ targets both years (n = 69; +0.14 for
+players on the same team, +0.26 for the 18 who moved). Pooled over every consecutive
+pair of seasons 2018–2025 (426 CB pairs), it's r = +0.19; passer rating allowed is
++0.12. Coverage outcomes are noisy from year to year for everyone. The test that would
+settle whether Shadow does better, a 2023 → 2024 correlation with team changers split
+out, needs 2024 tracking data, which the Big Data Bowl 2026 release doesn't include.
+
+What this means in practice:
+
+- **Avg Coverage Shadow** is a usable per-play measure of positioning at the throw,
+  with within-season reliability comparable to completion % allowed.
+- **SOE** describes what happened and shouldn't be used to rank defenders by skill
+  from one season of data.
+- **Still unknown:** whether avg Shadow persists across seasons and team changes.
+
 ## Run it
 
     pip install -r requirements.txt
-    python run.py data/raw/input_2023_w01.csv
+    python run.py data/raw/input_2023_w01.csv                    # one week
+    python run_season.py <folder_with_input_csvs> 2023           # full season, v1 + v2
+    python run_expected_model.py <folder_with_input_csvs> 2023   # throw-depth test
+    python run_stability.py <folder_with_input_csvs> 2023        # split-half + PFR benchmark
 
-Outputs land in `outputs/` as play-level scores and a leaderboard.
+Outputs land in `outputs/` as play-level scores and leaderboards; `run_stability.py`
+downloads the public nflverse PFR and roster files it benchmarks against into
+`data/raw/nflverse/`.
 
 ## Limitations
 
 Even v2 uses only the release-frame snapshot: the ball hasn't left the QB's hand yet
 in the model's view of the world, so a tight-window completion and a tight-window PBU
 still look identical at scoring time. v2 also gives all credit to the single closest
-defender; a second defender closing hard gets nothing. Both are on the roadmap.
+defender; a second defender closing hard gets nothing. Both are on the roadmap. SOE
+is not stable within a season (see Stability), and only one season of tracking is
+available, so nothing here is tested across seasons yet.
 
 ## Roadmap
 
