@@ -157,7 +157,68 @@ season as his completion % allowed, and far more so than passer rating allowed. 
 steadier with volume: half-season r climbs from +0.40 at 25 snaps per half to +0.50 at
 100 and +0.62 at 150 (full-season reliability 0.57 → 0.67 → 0.76). It isn't a man/zone
 artifact either: a CB's avg Shadow is uncorrelated with how often his team plays man
-(r = +0.00), and removing that leaves the split-half correlation at +0.45.
+(r = +0.00).
+
+**Part of that stability is role.** Alignment at the snap is measurable from tracking
+frame 1 (`run_role_checks.py`). Slot means inside the widest receiver on his side by
+more than a yard; depth is yards off the ball; cushion is distance to the nearest
+receiver. Across the 129 CBs with 100+ snaps, alignment alone explains about 30% of the
+spread in season avg Shadow (R² 0.31, adjusted 0.29). Slot share does most of it: slot
+corners score lower, r = −0.44. Adding scheme (man share, coverage-type mix) takes it to
+R² 0.34 (adjusted 0.27), and adding defensive team to 0.50 (adjusted 0.24). With those
+controls removed play by play within each half, split-half reliability drops but holds:
+
+| CBs, odd vs even weeks (n = 120) | Half-season r | Full-season reliability |
+|---|---|---|
+| Raw avg Shadow | +0.43 | 0.60 |
+| minus alignment | +0.33 | 0.50 |
+| minus alignment + scheme | +0.31 | 0.48 |
+| minus alignment + scheme + team | +0.34 | 0.51 |
+
+About a quarter of the reliability was role. The rest is a stable trait of the player
+(or of assignments the controls don't capture). One caveat cuts the other way: depth and
+cushion are partly the corner's own choice, so controlling for them may remove some skill.
+
+**But first-half Shadow doesn't forecast second-half results.** For 2023 CBs with 50+
+snaps and 15+ PFR targets in each half, first-half avg Shadow was used to predict
+second-half PFR completion % and yards per target allowed. Shadow's sign is flipped so
+that "right direction" is positive for every predictor.
+
+![Predictive validity, 2023 cornerbacks](figures/predictive_validity_2023.png)
+
+| First half → second half | n | Predictor (1st half) | → cmp % allowed | → yds/target allowed |
+|---|---|---|---|---|
+| Weeks 1–9 → 10–18 | 90 | Avg Shadow | +0.15 [−0.06, +0.34] | −0.03 [−0.24, +0.17] |
+| | | Role-adjusted Shadow | +0.05 | −0.03 |
+| | | Cmp % allowed | +0.27 [+0.07, +0.45] | +0.17 [−0.03, +0.37] |
+| | | Yds/target allowed | +0.04 | +0.09 |
+| Odd → even weeks | 101 | Avg Shadow | +0.09 [−0.11, +0.28] | +0.03 [−0.17, +0.22] |
+| | | Role-adjusted Shadow | +0.00 | +0.01 |
+| | | Cmp % allowed | +0.36 [+0.18, +0.52] | +0.13 [−0.07, +0.31] |
+| | | Yds/target allowed | +0.02 | +0.09 |
+
+First-half completion % allowed is the better forecaster of itself. For comparing
+two correlations measured on the same players, the table below uses Meng-Rosenthal-Rubin
+tests and a player bootstrap for the 95% interval of the difference:
+
+| Shadow minus cmp % allowed | Weeks 1–9 → 10–18 | Odd → even |
+|---|---|---|
+| Predicting cmp % allowed | −0.12 [−0.39, +0.15], p = 0.35 | −0.27 [−0.47, −0.06], p = 0.04 |
+| Predicting yds/target allowed | −0.21 [−0.48, +0.07], p = 0.12 | −0.10 [−0.36, +0.18], p = 0.47 |
+
+With about 100 corners, only the odd/even completion-% comparison is clearly worse for
+Shadow. The others are within noise, but none point Shadow's way. Adding first-half
+Shadow to first-half completion % raises the explained share of second-half completion
+% by under one percentage point (0.072 → 0.080; 0.132 → 0.135). Yards per target isn't
+forecastable by anything here.
+
+Why doesn't a stable metric forecast outcomes? The likeliest answer is that avg Shadow
+partly measures **involvement**, not just quality. High-Shadow corners aren't avoided;
+they're thrown at more. First-half Shadow correlates +0.23 [+0.04, +0.41] with
+second-half PFR targets per coverage snap (+0.20 on odd/even), and +0.34 with how often
+the corner is the closest defender to the throw. Being near where the ball goes is a
+stable part of a corner's job, especially an outside corner on the other team's top
+receiver. It isn't the same thing as making those throws fail.
 
 **SOE does not.** A corner's SOE in odd weeks tells you essentially nothing about his
 even weeks (r = +0.05 with throw depth, +0.04 without). Raising the
@@ -181,11 +242,16 @@ out, needs 2024 tracking data, which the Big Data Bowl 2026 release doesn't incl
 
 What this means in practice:
 
-- **Avg Coverage Shadow** is a usable per-play measure of positioning at the throw,
-  with within-season reliability comparable to completion % allowed.
+- **Avg Coverage Shadow** is a reliable description of how much a corner is around the
+  throw. It's as repeatable within a season as completion % allowed, and about three
+  quarters of that survives controls for alignment and scheme. It is **not** shown to be
+  a coverage-quality metric: it doesn't forecast completion % or yards per target
+  allowed, and it forecasts completion % less well than completion % itself.
 - **SOE** describes what happened and shouldn't be used to rank defenders by skill
   from one season of data.
-- **Still unknown:** whether avg Shadow persists across seasons and team changes.
+- **Still unknown:** whether avg Shadow persists across seasons and team changes, and
+  whether a version that separates involvement (how often a corner is near the throw)
+  from effect (how much window he takes when he is) would forecast outcomes.
 
 ## Run it
 
@@ -194,10 +260,11 @@ What this means in practice:
     python run_season.py <folder_with_input_csvs> 2023           # full season, v1 + v2
     python run_expected_model.py <folder_with_input_csvs> 2023   # throw-depth test
     python run_stability.py <folder_with_input_csvs> 2023        # split-half + PFR benchmark
+    python run_role_checks.py <folder_with_input_csvs> 2023      # role controls + predictive validity
 
 Outputs land in `outputs/` as play-level scores and leaderboards; `run_stability.py`
-downloads the public nflverse PFR and roster files it benchmarks against into
-`data/raw/nflverse/`.
+and `run_role_checks.py` download the public nflverse PFR, roster and player-ID files
+they benchmark against into `data/raw/nflverse/`.
 
 ## Limitations
 
