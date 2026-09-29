@@ -54,7 +54,7 @@ Then came the test I should have run first. If Shadow measures coverage skill, a
 
 Shadow lost. Adding it on top of completion percentage improved the prediction by less than one percentage point of explained variance.
 
-One more check explained why. Corners with high Shadow weren't avoided by quarterbacks. They were thrown at *more*. Shadow was strongly tied to how often a corner was the closest defender to the throw.
+One more check explained why. Corners with high Shadow weren't avoided by quarterbacks. They were thrown at *more*. Shadow was moderately tied to how often a corner was the closest defender to the throw.
 
 That's the real finding. Coverage Shadow is a stable measure of how often a corner is around the ball. That's a genuine part of his job, but it isn't the same as making those throws fail. It also explains the promising early result: the 62.5% versus 75.0% gap came from the same plays the metric was built on, so part of it was baked in. The predictive test is the stricter one, and Shadow didn't pass it.
 
@@ -67,7 +67,7 @@ This is exactly the moment where it's easy to fool yourself. With enough version
 Both parts failed.
 
 - **Involvement** was reliable (0.47) but predicted nothing about completions. It did predict how often a corner got targeted, which accounts for most of the original Shadow's stability.
-- **Effect** was the best outcome predictor I found, but its reliability was only 0.22. Each corner had fewer than 50 involved plays per half-season, which isn't enough to separate skill from noise. Even a second full season of tracking data would only lift it to about 0.36, still short of the bar.
+- **Effect** was the best outcome predictor of the Shadow versions, but its reliability was only 0.22. Each corner had fewer than 50 involved plays per half-season, which isn't enough to separate skill from noise. Even a second full season of tracking data would only lift it to about 0.36, still short of the bar.
 
 I stopped there. A fourth version would have been the start of tuning the test until something passed.
 

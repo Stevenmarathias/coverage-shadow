@@ -2,7 +2,11 @@
 
 Plain-language write-up: [WRITEUP.md](WRITEUP.md)
 
-An NFL player-tracking metric that quantifies how much catch window each defender erases on a pass.
+An NFL player-tracking metric that measures how often a defender is around the throw:
+how much catch window he takes away at release, averaged over his coverage snaps. It's
+stable within a season, but it was tested and found not to predict coverage outcomes,
+so it describes involvement, not coverage quality. [WRITEUP.md](WRITEUP.md) tells the
+story; the Stability section below has every number.
 
 Built on NFL Big Data Bowl 2026 tracking data: the full 2023 regular season. (The
 release lists 2024 weeks 14–18 in its supplementary file, but as play outcomes only,
